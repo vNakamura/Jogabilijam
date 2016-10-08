@@ -11,6 +11,7 @@ end
 
 function game_drw()
 	cls()
+	rectfill(0,0,127,127,3)
 	print("game",0,0,7)
 end
 
@@ -32,7 +33,7 @@ end
 
 function menu_drw()
 	cls()
-	rectfill(0,0,127,127,6)
+	rectfill(0,0,127,127,11)
 	if menu.count<15 then
 		print("aperte z",48,90,0)
 	end
@@ -51,30 +52,45 @@ end
 
 function _update()
 	screen.upd()
+	transition_upd()
 end
 
 function _draw()
 	screen.drw()
+	transition_drw()
 end
 	
 transition = {}
 function transition_drw ()
-	for i=0,31 do
-		line(0,i*4+transition.step,i*4+transition.step,0,0)
-		line(127,i*4+transition.step+1,i*4+transition.step+1,127,0)
+	if(not transition.running) return
+	if transition.step < 4 then
+ 	for i=0,31 do
+ 		local s=i*4+transition.step
+	 	line(0,s,s,0,0)
+		 line(s+1,127,127,s+1,0)
+	 end
+	else
+	 local s=max(transition.step-8,0)
+	 rectfill(0,0,127,64-s*8,0)
+	 rectfill(0,64+s*8,127,127,0)
+	 rectfill(0,0,64-s*8,127,0)
+	 rectfill(64+s*8,0,127,127,0)
 	end
 end
 function transition_upd()
+	if(not transition.running) return
 	transition.step += 1
-	if transition.step > 3 then
-		transition.cb()
-	end
+	if(transition.step==6)transition.cb()
+	if(transition.step>17)transition.running=false 
 end
 function start_transition(cb)
+	screen.upd=nothing
+	screen.drw=nothing
 	transition.step = 0
 	transition.cb = cb
-	screen.upd=transition_upd
-	screen.drw=transition_drw
+	transition.running = true
+end
+function nothing()
 end
 __gfx__
 bbbbbbbbbbffffbbbbeee4b6bb4444bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
