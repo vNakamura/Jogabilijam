@@ -1,7 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
-screen = {}
+-- metal jer corgi
+-- by vinicius nakamura
 palt(11,true)
 palt(0,false)
 
@@ -13,10 +14,19 @@ end
 function game_drw()
 	cls()
 	rectfill(0,0,127,127,3)
-	for a in all(actors) do
-		spr(a.spr,a.x-4,a.y+4-a.h*8,1,a.h,a.flip)
-		if(in_fov(a,player)) spr(16,a.x-4,a.y-6-a.h*8)
+	foreach(actors,actor_drw)
+end
+
+function actor_drw(a)
+	spr(a.spr,a.x-4,a.y+4-a.h*8,1,a.h,a.flip)
+	if(in_fov(a,player)) spr(16,a.x-4,a.y-6-a.h*8)
+end
+function create_actor(actor)
+	local a = {}
+	for k,v in pairs(actor) do
+		a[k] = v
 	end
+	return a
 end
 
 function game_start()
@@ -26,13 +36,14 @@ function game_start()
 	actors={}
 	add(actors,player)
 	add(actors,sushi)
-	screen.upd = game_upd
-	screen.drw = game_drw
+	scn_upd = game_upd
+	scn_drw = game_drw
 end
 
-player={}
-player.spr=21
-player.h=1
+player=create_actor({
+	spr=21,
+	h=1
+})
 function player_upd()
 	if btn(0) then
 		player.x-=1
@@ -46,18 +57,22 @@ function player_upd()
 	if(btn(3))player.y+=1
 end
 
-sushi={}
-sushi.x=10
-sushi.y=30
-sushi.spr=1
-sushi.h=2
-sushi.hasfov=true
+sushi=create_actor({
+	x=10,
+	y=30,
+	spr=1,
+	h=2,
+	hasfov=true
+})
 
 function in_fov(a,p)
-	if a.hasfov and p.y-a.y<5 then
+	if(not a.hasfov) return false
+	local dy = abs(p.y-a.y)
+	local dx = abs(p.x-a.x)
+	if dx<80 and dy<dx*.4 then
 	 return true
 	end
-	 return false
+ return false
 end
 
 menu = {}
@@ -65,7 +80,7 @@ menu.count = 0
 function menu_upd()
 	if btnp(4) then
 		sfx(0)
-	 start_transition(game_start)
+	 transition(game_start)
 	end
 	menu.count+=1
 	if (menu.count > 30) menu.count=0
@@ -83,8 +98,8 @@ end
 
 function show_menu()
 	music(0)
-	screen.upd = menu_upd
-	screen.drw = menu_drw
+	scn_upd = menu_upd
+	scn_drw = menu_drw
 end
 
 function _init()
@@ -92,47 +107,46 @@ function _init()
 end
 
 function _update()
-	screen.upd()
-	transition_upd()
+	scn_upd()
+	t_upd()
 end
 
 function _draw()
-	screen.drw()
-	transition_drw()
+	scn_drw()
+	t_drw()
 end
-	
-transition = {}
-function transition_drw ()
-	if(not transition.running) return
-	if transition.step < 4 then
+
+trst = {} --transition
+function t_drw ()
+	if(not trst.on) return
+	if trst.c < 4 then
  	for i=0,31 do
- 		local s=i*4+transition.step
+ 		local s=i*4+trst.c
 	 	line(0,s,s,0,0)
-		 line(s+1,127,127,s+1,0)
+		line(s+1,127,127,s+1,0)
 	 end
 	else
-	 local s=max(transition.step-8,0)
-	 rectfill(0,0,127,64-s*8,0)
-	 rectfill(0,64+s*8,127,127,0)
-	 rectfill(0,0,64-s*8,127,0)
-	 rectfill(64+s*8,0,127,127,0)
+	 local s=max(trst.c-8,0)*8
+	 rectfill(0,0,127,64-s,0)
+	 rectfill(0,64+s,127,127,0)
+	 rectfill(0,0,64-s,127,0)
+	 rectfill(64+s,0,127,127,0)
 	end
 end
-function transition_upd()
-	if(not transition.running) return
-	transition.step += 1
-	if(transition.step==6)transition.cb()
-	if(transition.step>17)transition.running=false 
+function t_upd()
+	if(not trst.on) return
+	trst.c += 1
+	if(trst.c==6)trst.cb()
+	if(trst.c>17)trst.on=false
 end
-function start_transition(cb)
-	screen.upd=nothing
-	screen.drw=nothing
-	transition.step = 0
-	transition.cb = cb
-	transition.running = true
+function transition(cb)
+	scn_upd=nothing
+	scn_drw=nothing
+	trst.c = 0
+	trst.cb = cb
+	trst.on = true
 end
-function nothing()
-end
+function nothing() end
 __gfx__
 00000000bbbfffbbbbbee4b6bbb444bbbbbbbbbbbbbbbbbbbbbfffbbbbbee46bbbb444bbbbbbbbbbbbbbbbbbbbbfffbbbbbee4bbbbb444bbbbbbbbbbbbbbbbbb
 00000000bbf5f5bbbbefffbbbb4fffbbbbb444bbbbbbbbbbbbf5f5bbbbefffb6bb4fffbbbbb444bbbbbbbbbbbbf5f5bbbbefffb6bb4fffbbbbb444bbbbbbbbbb
@@ -428,4 +442,3 @@ __music__
 00 41424344
 00 41424344
 00 41424344
-
