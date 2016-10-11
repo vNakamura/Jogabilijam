@@ -22,45 +22,85 @@ function game_start()
 	music(1)
 	actors={}
 	player=create_actor({
-		spr=21,
+		spr={"walk",-2,2,5,18},
 		h=1,
-		x=64,
-		y=64
+		x=8,
+		y=8,
+		spd=2
 	})
-	add(actors,player)
 	sushi=create_actor({
-		x=10,
-		y=30,
-		spr=1,
+		spr={"static",8},
+		x=2,
+		y=4,
 		h=2,
 		hasfov=true
 	})
-	add(actors,sushi)
 	scn_upd = game_upd
 	scn_drw = game_drw
 end
 
 function player_upd()
-	if btn(0) then
-		player.x-=1
-		player.flip=true
+	if not player.mov then
+		if(btn(0))move_actor(player,0)
+		if(btn(1))move_actor(player,1)
+		if(btn(2))move_actor(player,2)
+		if(btn(3))move_actor(player,3)
 	end
-	if btn(1) then
-		player.x+=1
-		player.flip=false
-	end
-	if(btn(2))player.y-=1
-	if(btn(3))player.y+=1
 end
 
 function check_fov(a,p)
 	if(not a.hasfov) return false
-	local dy = abs(p.y-a.y)
-	local dx = abs(p.x-a.x)
-	if dx<80 and dy<dx*.4 then
+	local dy= abs(p.y-a.y)
+	local dx= abs(p.x-a.x)
+	if dx<8 and dy<dx*.4 then
 	 return true
 	end
  return false
+end
+
+function create_actor(actor)
+	local a = {
+		x=0,
+		y=0,
+		mov=false,
+		spd=1,
+		step=0,
+		d=1
+	}
+	for k,v in pairs(actor) do
+		a[k]=v
+	end
+	a.tx=a.x
+	a.ty=a.y
+	add(actors,a)
+	return a
+end
+dirs = {{-1,0},{1,0},{0,-1},{0,1}}
+function move_actor(a,d)
+	a.step=0
+	a.mov=true
+	a.d = d+1
+	a.tx=a.x+dirs[d][1]
+	a.ty=a.y+dirs[d][2]
+end
+function actor_upd(a)
+	if a.mov then
+		a.step+=a.spd
+		if a.step>=16 then
+			a.mov=false
+			a.x=a.tx
+			a.y=a.ty
+		end
+	end
+	a.in_fov = check_fov(a,player)
+end
+function actor_drw(a)
+	local x= a.x*8+ (a.tx-a.x)*a.step/2
+	local y= a.y*8+ (a.ty-a.y)*a.step/2- (a.h-1)*8
+	local sp=a.spr[a.d+1]
+	if (a.mov and a.spr[1]=="walk") sp+=1- flr((a.step%6+1)/2)
+	spr(sp,x,y,1,a.h,a.flip)
+	if(a.in_fov) spr(16,a.x*8,(a.y-a.h)*8)
 end
 
 function menu_upd()
@@ -68,13 +108,13 @@ function menu_upd()
 		sfx(0)
 	 transition(game_start)
 	end
-	menu.count+=1
-	if (menu.count > 30) menu.count=0
+	menu.c+=1
+	if (menu.c > 30) menu.c=0
 end
 function menu_drw()
 	cls()
 	rectfill(0,0,127,127,11)
-	if menu.count<15 then
+	if menu.c<15 then
 		print("aperte z",48,90,0)
 	end
 	print("@vnaka            #jogabilijam",5,120,0)
@@ -82,7 +122,7 @@ function menu_drw()
 end
 function show_menu()
 	music(0)
-	menu = {count = 0}
+	menu = {c = 0}
 	scn_upd = menu_upd
 	scn_drw = menu_drw
 end
@@ -98,21 +138,6 @@ end
 function _draw()
 	scn_drw()
 	t_drw()
-end
-
-function create_actor(actor)
-	local a = {}
-	for k,v in pairs(actor) do
-		a[k] = v
-	end
-	return a
-end
-function actor_upd(a)
-	a.in_fov = check_fov(a,player)
-end
-function actor_drw(a)
-	spr(a.spr,a.x-4,a.y+4-a.h*8,1,a.h,a.flip)
-	if(a.in_fov) spr(16,a.x-4,a.y-6-a.h*8)
 end
 
 trst = {} --transition
@@ -148,37 +173,37 @@ end
 function nothing() end
 __gfx__
 00000000bbbbbbbbbbbbbbbbbbbbbbbbbb7b7bbbbb7b7bbbbb7b7bbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbee4b6bbbee46bbbbee4bb
-00000000bbbbbbbbbbbbbbbbbbbbbbbbbb797bbbbb797bbbbb797bbbbbf5f5bbbbf5f5bbbbf5f5bbbbffffbbbbffffbbbbffffbbbbefffbbbbefffb6bbefffb6
-00000000bbbbbbbbbbbbbbbbbbbbbbbbbb799bbbbb799bbbbb799bbbbb5757bbbb5757bbbb5757bbbbfff5bbbbfff5bbbbfff5bbbbf7f76bbbf7f7bbbbf7f7bb
-000000009bbbb7bb9bbbb7bb9bbbb7bbbb967bbbbb977bbbbb977bbbbbf5f5bbbbf5f5bbbbf5f5bbbbff5fbbbbff5fbbbbff5fbbbbf0f0b6bbf0f06bbbf0f06b
-000000007bbbb79b7bbbb79b7bbbb79bbb694bbbbb794bbbbb699bbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbb4444bbbb4444bbbb4444b6
-00000000b9979777b9979777b9979777bb676bbbbb7679bbb9767bbbbbf000bbbbf000bbbbf000bbbbffffbbbbffffbbbbffffbbbb400779bb400779bb400779
-00000000b777776bb777776bb777776bbb676bbbbb7b6bbbbb6b7bbbbbff44bbbbff44bbbbff44bbbbffffbbbbffffbbbbffffbbbbf444bbbbf444bbbbf444bb
-00000000b76bb76b7b6bb7b667bbb67bbb7b7bbbbbbb7bbbbb7bbbbbb5555bbb55555bbbb55555bbb5555bbb55555bbbb55555bbbddddbbbdddddbbbbdddddbb
-bbb77bbbbbbb9bbbbbb9bbbbbbbbb9bbbbbbbbbbbbbbbbbbbbbbbbbb555855bb555855bb555855bb555555bb555555bb555555bbdddaddbbdddaddbbdddaddbb
-bb7887bbbbb476bbbbb476bbbbb976bbbbbb7bbbbb7bbbbbbbbbb7bb558995bbf58995bb55899fbb555555bbf55555bb55555fbbddddadbbfdddadbbddddafbb
-bb7887bbbbb644bbbbb644bbbbb644bbbbbbbbbbbbbbbbbbbbbbbbbbf55a5fbbf55a5fbbf55a5fbbf5555fbbf5555fbbf5555fbbfdd2dfbbfdd2dfbbfdd2dfbb
+000000009bbbb76b9bbbb76b9bbbb76bbb797bbbbb797bbbbb797bbbbbf5f5bbbbf5f5bbbbf5f5bbbbffffbbbbffffbbbbffffbbbbefffbbbbefffbbbbefffb6
+000000007bbbb79b7bbbb79b7bbbb79bbb799bbbbb799bbbbb799bbbbb5757bbbb5757bbbb5757bbbbfff5bbbbfff5bbbbfff5bbbbf7f76bbbf7f7b6bbf7f76b
+00000000b9979956b9979956b9979956bb977bbbbb967bbbbb977bbbbbf5f5bbbbf5f5bbbbf5f5bbbbff5fbbbbff5fbbbbff5fbbbbf0f0bbbbf0f06bbbf0f0bb
+00000000b7979777b7979777b7979777bb7949bbbb694bbbb9699bbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbb4444b6bb4444bbbb4444b6
+00000000b777776bb777776bb777776bbb767bbbbb696bbbbb767bbbbbf000bbbbf000bbbbf000bbbbffffbbbbffffbbbbffffbbbb400779bb400779bb400779
+000000007b6bb7b6b76bb76b67bbb67bbb7b6bbbbb676bbbbb6b7bbbbbff44bbbbff44bbbbff44bbbbffffbbbbffffbbbbffffbbbbf444bbbbf444bbbbf444bb
+00000000bbbbbbbbbbbbbbbbbbbbbbbbbbbb7bbbbb7b7bbbbb7bbbbb55555bbbb5555bbbb55555bb55555bbbb5555bbbb55555bbdddddbbbbddddbbbbdddddbb
+bbb77bbbbbb9bbbbbbbb9bbbbbbbb9bbbbbbbbbbbbbbbbbbbbbbbbbb555855bb555855bb555855bb555555bb555555bb555555bbdddaddbbdddaddbbdddaddbb
+bb7887bbbbb476bbbbb476bbbbb476bbbbbb7bbbbb7bbbbbbbbbb7bbf58995bb558995bb55899fbbf55555bb555555bb55555fbbfdddadbbddddadbbddddafbb
+bb7887bbbb79947bbb79947bbb79947bbbbbbbbbbbbbbbbbbbbbbbbbf55a5fbbf55a5fbbf55a5fbbf5555fbbf5555fbbf5555fbbfdd2dfbbfdd2dfbbfdd2dfbb
 bb7887bbbb75957bbb75957bbb75957bbbb7bbbbbbbbb7bbbb7bbbbbf5555fbbf5555fbbf5555fbbf5555fbbf5555fbbf5555fbbfddddfbbfddddfbbfddddfbb
-bb7887bbbb69776bbb69776bbb69776bbbbbbbbbbbbbbbbbbbbbbbbbf1111fbbb1111fbbf1111bbbf1111fbbb1111fbbf1111bbbf4444fbbb4444fbbf4444bbb
-bbb77bbbbbb757bbbbb757bbbbb757bbbbb4bbbbbbb4bbbbbbb4bbbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbbb4404bbbb440fbbbbff04bbb
-bb7887bbbbb676bbbbb676bbbbb676bbbb554bbbbb554bbbbb554bbbb1101bbbb11044bbb4401bbbb1101bbbb11044bbb4401bbbbff0fbbbbff055bbb550fbbb
-bbb77bbbbbb7b7bbbbb6b7bbbbb7b6bbb44454bbb44454bbb44454bbb44044bbb44bbbbbbbbb44bbb44044bbb44bbbbbbbbb44bbb55055bbb55bbbbbbbbb55bb
-bbb4eeb6bbb4ee6bbbb4eebbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb00000000
-bb444ebbbb444eb6bb444eb6bb4fffbbbb4fffbbbb4fffbbbb4444bbbb4444bbbb4444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bb00000000
-bb44446bbb4444bbbb4444bbb447f7bbb447f7bbb447f7bbb444444bb444444bb444444bbb4fffbbbb4fffbbbb4fffbbbb4444bbbb4444bbbb4444bb00000000
-bb4444b6bb44446bbb44446bbb40f0bbbb40f0bbbb40f0bbbb4444bbbb4444bbbb4444bbbb47f7bbbb47f7bbbb47f7bbbb4444bbbb4444bbbb4444bb00000000
+bb7887bbbb69776bbb69776bbb69776bbbbbbbbbbbbbbbbbbbbbbbbbb1111fbbf1111fbbf1111bbbb1111fbbf1111fbbf1111bbbb4444fbbf4444fbbf4444bbb
+bbb77bbbbbb757bbbbb757bbbbb757bbbbb4bbbbbbb4bbbbbbb4bbbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbbb440fbbbb4404bbbbff04bbb
+bb7887bbbbb676bbbbb676bbbbb676bbbb554bbbbb554bbbbb554bbbb11044bbb1101bbbb4401bbbb11044bbb1101bbbb4401bbbbff055bbbff0fbbbb550fbbb
+bbb77bbbbbb6b7bbbbb7b7bbbbb7b6bbb44454bbb44454bbb44454bbb44bbbbbb44044bbbbbb44bbb44bbbbbb44044bbbbbb44bbb55bbbbbb55055bbbbbb55bb
+bbb4ee6bbbb4eeb6bbb4eebbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb00000000
+bb444eb6bb444ebbbb444eb6bb4fffbbbb4fffbbbb4fffbbbb4444bbbb4444bbbb4444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bb00000000
+bb4444bbbb44446bbb4444bbb447f7bbb447f7bbb447f7bbb444444bb444444bb444444bbb4fffbbbb4fffbbbb4fffbbbb4444bbbb4444bbbb4444bb00000000
+bb44446bbb4444b6bb44446bbb40f0bbbb40f0bbbb40f0bbbb4444bbbb4444bbbb4444bbbb47f7bbbb47f7bbbb47f7bbbb4444bbbb4444bbbb4444bb00000000
 bb4444bbbb4444bbbb4444b6b44fffbbb44fffbbb44fffbbbb44444bbb44444bbb44444bbb40f0bbbb40f0bbbb40f0bbbb4444bbbb4444bbbb4444bb00000000
 bb444479bb444479bb444479bbf000bbbbf000bbbbf000bbb44444bbb44444bbb44444bbbb4444bbbb4444bbbb4444bbbb4444bbbb4444bbbb4444bb00000000
 bb444fbbbb444fbbbb444fbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbb4400bbbb4400bbbb4400bbbb4444bbbb4444bbbb4444bb00000000
-bddddbbbdddddbbbbdddddbbb4004bbb44004bbbb40044bbb4444bbb44444bbbb44444bbbbf444bbbbf444bbbbf444bbbbf44fbbbbf44fbbbbf44fbb00000000
-ddddddbbddddddbbddddddbb448844bb448844bb448844bb444444bb444444bb444444bbb8888bbb88888bbbb88888bbb8888bbb88888bbbb88888bb00000000
-ddddddbbfdddddbbdddddfbb442844bbf42844bb44284fbb444444bbf44444bb44444fbb888118bb888118bb888118bb888888bb888888bb888888bb00000000
-fddddfbbfddddfbbfddddfbbf4004fbbf4004fbbf4004fbbf4444fbbf4444fbbf4444fbb881558bbf81558bb88155fbb888888bbf88888bb88888fbb00000000
+dddddbbbbddddbbbbdddddbb44004bbbb4004bbbb40044bb44444bbbb4444bbbb44444bbbbf444bbbbf444bbbbf444bbbbf44fbbbbf44fbbbbf44fbb00000000
+ddddddbbddddddbbddddddbb448844bb448844bb448844bb444444bb444444bb444444bb88888bbbb8888bbbb88888bb88888bbbb8888bbbb88888bb00000000
+fdddddbbddddddbbdddddfbbf42844bb442844bb44284fbbf44444bb444444bb44444fbb888118bb888118bb888118bb888888bb888888bb888888bb00000000
+fddddfbbfddddfbbfddddfbbf4004fbbf4004fbbf4004fbbf4444fbbf4444fbbf4444fbbf81558bb881558bb88155fbbf88888bb888888bb88888fbb00000000
 fddddfbbfddddfbbfddddfbbf4dd4fbbf4dd4fbbf4dd4fbbf4444fbbf4444fbbf4444fbbf8888fbbf8888fbbf8888fbbf8888fbbf8888fbbf8888fbb00000000
-f4444fbbb4444fbbf4444bbbfdd0dfbbbdd0dfbbfdd0dbbbfdd0dfbbbdd0dfbbfdd0dbbbf8888fbbb8888fbbb8888bbbf8888fbbb8888fbbb8888bbb00000000
-b4404bbbb440fbbbbff04bbbbdd0dbbbbdd0dbbbbdd0dbbbbdd0dbbbbdd0dbbbbdd0dbbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbb00000000
-bff0fbbbbff055bbb550fbbbbdd0dbbbbdd011bbb110dbbbbdd0dbbbbdd011bbb110dbbbb1101bbbb11055bbb5501bbbb1101bbbb11055bbb5501bbb00000000
-b55055bbb55bbbbbbbbb55bbb11011bbb11bbbbbbbbb11bbb11011bbb11bbbbbbbbb11bbb55055bbb55bbbbbbbbb55bbb55055bbb55bbbbbbbbb55bb00000000
+b4444fbbf4444fbbf4444bbbbdd0dfbbfdd0dfbbfdd0dbbbbdd0dfbbfdd0dfbbfdd0dbbbb8888fbbf8888fbbb8888bbbb8888fbbf8888fbbb8888bbb00000000
+b440fbbbb4404bbbbff04bbbbdd0dbbbbdd0dbbbbdd0dbbbbdd0dbbbbdd0dbbbbdd0dbbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbb00000000
+bff055bbbff0fbbbb550fbbbbdd011bbbdd0dbbbb110dbbbbdd011bbbdd0dbbbb110dbbbb11055bbb1101bbbb5501bbbb11055bbb1101bbbb5501bbb00000000
+b55bbbbbb55055bbbbbb55bbb11bbbbbb11011bbbbbb11bbb11bbbbbb11011bbbbbb11bbb55bbbbbb55055bbbbbb55bbb55bbbbbb55055bbbbbb55bb00000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
