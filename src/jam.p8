@@ -16,13 +16,34 @@ end
 function game_drw()
 	cls()
 	map(0,0,0,0,16,14)
-	rectfill(112,113,126,126,5)
 	foreach(actors,actor_drw)
+
+	--radar
+	rectfill(111,113,126,126,1)
+	clip(111,113,16,14)
+	foreach(actors,radar_drw)
+	clip()
+end
+function radar_drw(a,p)
+	if a.hasfov then
+		local fh=a.d%2==1
+		local fv=a.d==2 or a.d==3
+		spr(0,(fh and 104 or 111)+a.x,(fv and 106 or 113)+a.y,1,1,fh,fv)
+	end
+	circ(111+a.x,113+a.y,1,a.c)
 end
 
 function game_start()
-	music(1)
 	actors={}
+	sushi=create_actor({
+		spr={"walk",-8,11,-11,8},
+		x=7,
+		y=5,
+		h=2,
+		d=1,
+		hasfov=true,
+		cicle={1,1,3,3,0,0,2,2}
+	})
 	player=create_actor({
 		spr={"walk",-2,2,5,18},
 		h=1,
@@ -30,13 +51,6 @@ function game_start()
 		y=8,
 		spd=2,
 		c=10
-	})
-	sushi=create_actor({
-		spr={"static",8},
-		x=2,
-		y=4,
-		h=2,
-		hasfov=true
 	})
 	scn_upd = game_upd
 	scn_drw = game_drw
@@ -54,12 +68,6 @@ end
 function check_fov(a,p)
 	if(not a.hasfov) return false
 	return pget(111+p.x,113+p.y,a.c)==13
---	local dy= abs(p.y-a.y)
---	local dx= abs(p.x-a.x)
---	if dx<8 and dy<dx*.4 then
---	 return true
---	end
--- return false
 end
 
 function create_actor(actor)
@@ -70,7 +78,8 @@ function create_actor(actor)
 		spd=1,
 		step=0,
 		d=2,
-		c=7
+		c=7,
+		cs=1
 	}
 	for k,v in pairs(actor) do
 		a[k]=v
@@ -97,6 +106,10 @@ function actor_upd(a)
 			a.x=a.tx
 			a.y=a.ty
 		end
+	elseif a.cicle then
+		a.cs+=1
+		move_actor(a,a.cicle[a.cs])
+		if(a.cs>=#a.cicle)a.cs=0
 	end
 	a.in_fov = check_fov(a,player)
 end
@@ -106,13 +119,11 @@ function actor_drw(a)
 	local sp=a.spr[2]
 	if a.spr[1]=="walk" then
 		sp=a.spr[a.d+1]
-		if(a.mov)sp+=1-flr((a.step%12+1)/4)
+		if(a.mov)sp+=1-flr((a.step%12)/4)
 	end
 	spr(abs(sp),x,y,1,a.h,sp<0)
-	if(a.hasfov)spr(0,111+a.x,113+a.y)
-	pset(111+a.x,113+a.y,a.c)
 	if a.in_fov then
-		spr(16,a.x*8,(a.y-a.h)*8)
+		spr(16,x,y-10)
 	end
 end
 
@@ -134,7 +145,6 @@ function menu_drw()
 	spr(1,45,68,5,2)
 end
 function show_menu()
-	music(0)
 	menu = {c = 0}
 	scn_upd = menu_upd
 	scn_drw = menu_drw
@@ -151,7 +161,7 @@ end
 function _draw()
 	scn_drw()
 	t_drw()
-	print(debug_s,2,122,0)
+	print(debug_s,2,122,8)
 end
 
 trst = {} --transition
@@ -186,14 +196,14 @@ function transition(cb)
 end
 function nothing() end
 __gfx__
-ddddddddbbbbbbbbbbbbbbbbbbbbbbbbbb7b7bbbbb7b7bbbbb7b7bbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbee4b6bbbee46bbbbee4bb
-ddddddd1b9bbb76b9bbbb76bb9bbb76bbb797bbbbb797bbbbb797bbbbbf5f5bbbbf5f5bbbbf5f5bbbbffffbbbbffffbbbbffffbbbbefffbbbbefffbbbbefffb6
-dddddddbb7bbb79bb7bbb79bb7bbb79bbb799bbbbb799bbbbb799bbbbb5757bbbb5757bbbb5757bbbbfff5bbbbfff5bbbbfff5bbbbf7f76bbbf7f7b6bbf7f76b
-dddddd1bb9979956b9979956b9979956bb977bbbbb967bbbbb977bbbbbf5f5bbbbf5f5bbbbf5f5bbbbff5fbbbbff5fbbbbff5fbbbbf0f0bbbbf0f06bbbf0f0bb
+bdddddddbbbbbbbbbbbbbbbbbbbbbbbbbb7b7bbbbb7b7bbbbb7b7bbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbee4b6bbbee46bbbbee4bb
+ddddddddb9bbb76b9bbbb76bb9bbb76bbb797bbbbb797bbbbb797bbbbbf5f5bbbbf5f5bbbbf5f5bbbbffffbbbbffffbbbbffffbbbbefffbbbbefffbbbbefffb6
+ddddddddb7bbb79bb7bbb79bb7bbb79bbb799bbbbb799bbbbb799bbbbb5757bbbb5757bbbb5757bbbbfff5bbbbfff5bbbbfff5bbbbf7f76bbbf7f7b6bbf7f76b
+dddddddbb9979956b9979956b9979956bb977bbbbb967bbbbb977bbbbbf5f5bbbbf5f5bbbbf5f5bbbbff5fbbbbff5fbbbbff5fbbbbf0f0bbbbf0f06bbbf0f0bb
 ddddddbbb7979777b7979777b7979777bb7949bbbb694bbbb9699bbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbb4444b6bb4444bbbb4444b6
-ddddd1bbb777776bb777776bb777776bbb767bbbbb696bbbbb767bbbbbf000bbbbf000bbbbf000bbbbffffbbbbffffbbbbffffbbbb400779bb400779bb400779
-ddd1bbbb7b6bb7b6b76bb76b67bbb67bbb7b6bbbbb676bbbbb6b7bbbbbff44bbbbff44bbbbff44bbbbffffbbbbffffbbbbffffbbbbf444bbbbf444bbbbf444bb
-d1bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb7bbbbb7b7bbbbb7bbbbb55555bbbb5555bbbb55555bb55555bbbb5555bbbb55555bbdddddbbbbddddbbbbdddddbb
+dddddbbbb777776bb777776bb777776bbb767bbbbb696bbbbb767bbbbbf000bbbbf000bbbbf000bbbbffffbbbbffffbbbbffffbbbb400779bb400779bb400779
+ddddbbbb7b6bb7b6b76bb76b67bbb67bbb7b6bbbbb676bbbbb6b7bbbbbff44bbbbff44bbbbff44bbbbffffbbbbffffbbbbffffbbbbf444bbbbf444bbbbf444bb
+ddbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb7bbbbb7b7bbbbb7bbbbb55555bbbb5555bbbb55555bb55555bbbb5555bbbb55555bbdddddbbbbddddbbbbdddddbb
 bbb77bbbbbb9bbbbbbbb9bbbbbbbb9bbbbbbbbbbbbbbbbbbbbbbbbbb555855bb555855bb555855bb555555bb555555bb555555bbdddaddbbdddaddbbdddaddbb
 bb7887bbbbb476bbbbb476bbbbb476bbbbbb7bbbbb7bbbbbbbbbb7bbf58995bb558995bb55899fbbf55555bb555555bb55555fbbfdddadbbddddadbbddddafbb
 bb7887bbbb79947bbb79947bbb79947bbbbbbbbbbbbbbbbbbbbbbbbbf55a5fbbf55a5fbbf55a5fbbf5555fbbf5555fbbf5555fbbfdd2dfbbfdd2dfbbfdd2dfbb
@@ -202,14 +212,14 @@ bb7887bbbb69776bbb69776bbb69776bbbbbbbbbbbbbbbbbbbbbbbbbb1111fbbf1111fbbf1111bbb
 bbb77bbbbbb757bbbbb757bbbbb757bbbbb4bbbbbbb4bbbbbbb4bbbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbbb1101bbbb440fbbbb4404bbbbff04bbb
 bb7887bbbbb676bbbbb676bbbbb676bbbb554bbbbb554bbbbb554bbbb11044bbb1101bbbb4401bbbb11044bbb1101bbbb4401bbbbff055bbbff0fbbbb550fbbb
 bbb77bbbbbb6b7bbbbb7b7bbbbb7b6bbb44454bbb44454bbb44454bbb44bbbbbb44044bbbbbb44bbb44bbbbbb44044bbbbbb44bbb55bbbbbb55055bbbbbb55bb
-bbb4ee6bbbb4eeb6bbb4eebbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2222222b
-bb444eb6bb444ebbbb444eb6bb4fffbbbb4fffbbbb4fffbbbb4444bbbb4444bbbb4444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bb222222bb
-bb4444bbbb44446bbb4444bbb447f7bbb447f7bbb447f7bbb444444bb444444bb444444bbb4fffbbbb4fffbbbb4fffbbbb4444bbbb4444bbbb4444bb22222bbb
-bb44446bbb4444b6bb44446bbb40f0bbbb40f0bbbb40f0bbbb4444bbbb4444bbbb4444bbbb47f7bbbb47f7bbbb47f7bbbb4444bbbb4444bbbb4444bb2222bbbb
-bb4444bbbb4444bbbb4444b6b44fffbbb44fffbbb44fffbbbb44444bbb44444bbb44444bbb40f0bbbb40f0bbbb40f0bbbb4444bbbb4444bbbb4444bb222bbbbb
-bb444479bb444479bb444479bbf000bbbbf000bbbbf000bbb44444bbb44444bbb44444bbbb4444bbbb4444bbbb4444bbbb4444bbbb4444bbbb4444bb22bbbbbb
-bb444fbbbb444fbbbb444fbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbb4400bbbb4400bbbb4400bbbb4444bbbb4444bbbb4444bb2bbbbbbb
-dddddbbbbddddbbbbdddddbb44004bbbb4004bbbb40044bb44444bbbb4444bbbb44444bbbbf444bbbbf444bbbbf444bbbbf44fbbbbf44fbbbbf44fbbbbbbbbbb
+bbb4ee6bbbb4eeb6bbb4eebbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb00000000
+bb444eb6bb444ebbbb444eb6bb4fffbbbb4fffbbbb4fffbbbb4444bbbb4444bbbb4444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bbbbb444bb00000000
+bb4444bbbb44446bbb4444bbb447f7bbb447f7bbb447f7bbb444444bb444444bb444444bbb4fffbbbb4fffbbbb4fffbbbb4444bbbb4444bbbb4444bb00000000
+bb44446bbb4444b6bb44446bbb40f0bbbb40f0bbbb40f0bbbb4444bbbb4444bbbb4444bbbb47f7bbbb47f7bbbb47f7bbbb4444bbbb4444bbbb4444bb00000000
+bb4444bbbb4444bbbb4444b6b44fffbbb44fffbbb44fffbbbb44444bbb44444bbb44444bbb40f0bbbb40f0bbbb40f0bbbb4444bbbb4444bbbb4444bb00000000
+bb444479bb444479bb444479bbf000bbbbf000bbbbf000bbb44444bbb44444bbb44444bbbb4444bbbb4444bbbb4444bbbb4444bbbb4444bbbb4444bb00000000
+bb444fbbbb444fbbbb444fbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbb4400bbbb4400bbbb4400bbbb4444bbbb4444bbbb4444bb00000000
+dddddbbbbddddbbbbdddddbb44004bbbb4004bbbb40044bb44444bbbb4444bbbb44444bbbbf444bbbbf444bbbbf444bbbbf44fbbbbf44fbbbbf44fbb00000000
 ddddddbbddddddbbddddddbb448844bb448844bb448844bb444444bb444444bb444444bb88888bbbb8888bbbb88888bb88888bbbb8888bbbb88888bb00000000
 fdddddbbddddddbbdddddfbbf42844bb442844bb44284fbbf44444bb444444bb44444fbb888118bb888118bb888118bb888888bb888888bb888888bb00000000
 fddddfbbfddddfbbfddddfbbf4004fbbf4004fbbf4004fbbf4444fbbf4444fbbf4444fbbf81558bb881558bb88155fbbf88888bb888888bb88888fbb00000000
@@ -480,4 +490,3 @@ __music__
 00 41424344
 00 41424344
 00 41424344
-
