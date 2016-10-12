@@ -21,47 +21,79 @@ function game_drw()
 	--radar
 	rectfill(111,113,126,126,1)
 	clip(111,113,16,14)
-	foreach(actors,radar_drw)
+	foreach(actors,fov_drw)
+	foreach(actors,dot_drw)
 	clip()
 end
-function radar_drw(a,p)
+function fov_drw(a,p)
 	if a.hasfov then
-		local fh=a.d%2==1
-		local fv=a.d==2 or a.d==3
+		local fh=a.d==1 or a.d==4
+		local fv=a.d==1 or a.d==3
 		spr(0,(fh and 104 or 111)+a.x,(fv and 106 or 113)+a.y,1,1,fh,fv)
 	end
-	circ(111+a.x,113+a.y,1,a.c)
+end
+function dot_drw(a)
+	if a.main then circ(111+a.x,113+a.y,1,10)
+	else pset(111+a.x,113+a.y,7) end
 end
 
 function game_start()
 	actors={}
-	sushi=create_actor({
-		spr={"walk",-8,11,-11,8},
-		x=7,
-		y=5,
+	corra=create_actor({
+		spr={"walk",-33,14,33,-14},
+		x=4,
+		y=3,
 		h=2,
-		d=1,
+		hasfov=true,
+		cicle={1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0}
+	})
+	sushi=create_actor({
+		spr={"walk",-11,8,11,-8},
+		x=8,
+		y=6,
+		h=2,
 		hasfov=true,
 		cicle={1,1,3,3,0,0,2,2}
 	})
-	player=create_actor({
+	andre=create_actor({
+		spr={"walk",-39,36,39,-36},
+		x=12,
+		y=11,
+		h=2,
+		hasfov=true,
+		cicle={0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1}
+	})
+	rick=create_actor({
+		spr={"walk",-45,42,45,-42},
+		x=0,
+		y=12,
+		h=2,
+		hasfov=true,
+		cicle={
+			2,2,2,2,2,2,2,2,2,2,2,2,
+			1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+			3,3,3,3,3,3,3,3,3,3,3,3,
+			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+		}
+	})
+	ellie=create_actor({
 		spr={"walk",-2,2,5,18},
 		h=1,
 		x=8,
-		y=8,
+		y=15,
 		spd=2,
-		c=10
+		main=true
 	})
 	scn_upd = game_upd
 	scn_drw = game_drw
 end
 
 function player_upd()
-	if not player.mov then
-		if(btn(0))move_actor(player,0)
-		if(btn(1))move_actor(player,1)
-		if(btn(2))move_actor(player,2)
-		if(btn(3))move_actor(player,3)
+	if not ellie.mov then
+		if(btn(0))move_actor(ellie,0)
+		if(btn(1))move_actor(ellie,1)
+		if(btn(2))move_actor(ellie,2)
+		if(btn(3))move_actor(ellie,3)
 	end
 end
 
@@ -78,7 +110,6 @@ function create_actor(actor)
 		spd=1,
 		step=0,
 		d=2,
-		c=7,
 		cs=1
 	}
 	for k,v in pairs(actor) do
@@ -102,6 +133,7 @@ function actor_upd(a)
 	if a.mov then
 		a.step+=a.spd
 		if a.step>=16 then
+			a.step=0
 			a.mov=false
 			a.x=a.tx
 			a.y=a.ty
@@ -111,7 +143,7 @@ function actor_upd(a)
 		move_actor(a,a.cicle[a.cs])
 		if(a.cs>=#a.cicle)a.cs=0
 	end
-	a.in_fov = check_fov(a,player)
+	a.in_fov = check_fov(a,ellie)
 end
 function actor_drw(a)
 	local x= a.x*8+ (a.tx-a.x)*a.step/2
@@ -196,14 +228,14 @@ function transition(cb)
 end
 function nothing() end
 __gfx__
-bdddddddbbbbbbbbbbbbbbbbbbbbbbbbbb7b7bbbbb7b7bbbbb7b7bbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbee4b6bbbee46bbbbee4bb
-ddddddddb9bbb76b9bbbb76bb9bbb76bbb797bbbbb797bbbbb797bbbbbf5f5bbbbf5f5bbbbf5f5bbbbffffbbbbffffbbbbffffbbbbefffbbbbefffbbbbefffb6
-ddddddddb7bbb79bb7bbb79bb7bbb79bbb799bbbbb799bbbbb799bbbbb5757bbbb5757bbbb5757bbbbfff5bbbbfff5bbbbfff5bbbbf7f76bbbf7f7b6bbf7f76b
-dddddddbb9979956b9979956b9979956bb977bbbbb967bbbbb977bbbbbf5f5bbbbf5f5bbbbf5f5bbbbff5fbbbbff5fbbbbff5fbbbbf0f0bbbbf0f06bbbf0f0bb
-ddddddbbb7979777b7979777b7979777bb7949bbbb694bbbb9699bbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbb4444b6bb4444bbbb4444b6
-dddddbbbb777776bb777776bb777776bbb767bbbbb696bbbbb767bbbbbf000bbbbf000bbbbf000bbbbffffbbbbffffbbbbffffbbbb400779bb400779bb400779
-ddddbbbb7b6bb7b6b76bb76b67bbb67bbb7b6bbbbb676bbbbb6b7bbbbbff44bbbbff44bbbbff44bbbbffffbbbbffffbbbbffffbbbbf444bbbbf444bbbbf444bb
-ddbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb7bbbbb7b7bbbbb7bbbbb55555bbbb5555bbbb55555bb55555bbbb5555bbbb55555bbdddddbbbbddddbbbbdddddbb
+bdddddbbbbbbbbbbbbbbbbbbbbbbbbbbbb7b7bbbbb7b7bbbbb7b7bbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbee4b6bbbee46bbbbee4bb
+ddddddbbb9bbb76b9bbbb76bb9bbb76bbb797bbbbb797bbbbb797bbbbbf5f5bbbbf5f5bbbbf5f5bbbbffffbbbbffffbbbbffffbbbbefffbbbbefffbbbbefffb6
+dddddbbbb7bbb79bb7bbb79bb7bbb79bbb799bbbbb799bbbbb799bbbbb5757bbbb5757bbbb5757bbbbfff5bbbbfff5bbbbfff5bbbbf7f76bbbf7f7b6bbf7f76b
+dddddbbbb9979956b9979956b9979956bb977bbbbb967bbbbb977bbbbbf5f5bbbbf5f5bbbbf5f5bbbbff5fbbbbff5fbbbbff5fbbbbf0f0bbbbf0f06bbbf0f0bb
+ddddbbbbb7979777b7979777b7979777bb7949bbbb694bbbb9699bbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbbffffbbbb4444b6bb4444bbbb4444b6
+dddbbbbbb777776bb777776bb777776bbb767bbbbb696bbbbb767bbbbbf000bbbbf000bbbbf000bbbbffffbbbbffffbbbbffffbbbb400779bb400779bb400779
+dbbbbbbb7b6bb7b6b76bb76b67bbb67bbb7b6bbbbb676bbbbb6b7bbbbbff44bbbbff44bbbbff44bbbbffffbbbbffffbbbbffffbbbbf444bbbbf444bbbbf444bb
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb7bbbbb7b7bbbbb7bbbbb55555bbbb5555bbbb55555bb55555bbbb5555bbbb55555bbdddddbbbbddddbbbbdddddbb
 bbb77bbbbbb9bbbbbbbb9bbbbbbbb9bbbbbbbbbbbbbbbbbbbbbbbbbb555855bb555855bb555855bb555555bb555555bb555555bbdddaddbbdddaddbbdddaddbb
 bb7887bbbbb476bbbbb476bbbbb476bbbbbb7bbbbb7bbbbbbbbbb7bbf58995bb558995bb55899fbbf55555bb555555bb55555fbbfdddadbbddddadbbddddafbb
 bb7887bbbb79947bbb79947bbb79947bbbbbbbbbbbbbbbbbbbbbbbbbf55a5fbbf55a5fbbf55a5fbbf5555fbbf5555fbbf5555fbbfdd2dfbbfdd2dfbbfdd2dfbb
@@ -490,3 +522,4 @@ __music__
 00 41424344
 00 41424344
 00 41424344
+
