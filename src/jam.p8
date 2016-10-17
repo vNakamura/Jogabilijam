@@ -20,23 +20,34 @@ end
 
 function game_drw()
 	cls()
-	map(0,0,0,0,16,14)
+	map(0,0,0,16,16,14)
 	foreach(actors,actor_drw)
 
 	--radar
 	rectfill(rdr.x,rdr.y,rdr.x+rdr.w-1,rdr.y+rdr.h-1,1)
 	clip(rdr.x,rdr.y,rdr.w,rdr.h)
-	foreach(actors,fov_drw)
 	walls_drw()
 	foreach(actors,dot_drw)
+	foreach(enemies,fov)
 	clip()
 end
-function fov_drw(a,p)
-	if a.hasfov then
-		local fh=a.d==1 or a.d==4
-		local fv=a.d==1 or a.d==3
-		spr(0,(fh and 104 or 111)+a.x,(fv and 106 or 113)+a.y,1,1,fh,fv)
+function fov(a)
+	local _clean=true
+	for i=-.125,.125,.0125 do
+		for j=1,8 do
+			local _x=rdr.x+a.x+flr(cos(a.a+i)*j+.5)
+			local _y=rdr.y+a.y-flr(sin(a.a+i)*j+.5)
+			local _p=pget(_x,_y)
+			if(_p==5)break
+			pset(_x,_y,a.alert and 8 or 2)
+			if(_p==7) then
+				pset(_x,_y,7)
+				a.alert=true
+				_clean=false
+			end
+		end
 	end
+	if(_clean)a.alert=false
 end
 function walls_drw()
 	for y=0,rdr.h do
@@ -46,8 +57,7 @@ function walls_drw()
 	end
 end
 function dot_drw(a)
-	if a.main then circ(rdr.x+a.x,rdr.y+a.y,1,7)
-	else pset(rdr.x+a.x,rdr.y+a.y,8) end
+	pset(rdr.x+a.x,rdr.y+a.y,a.main and 7 or 8)
 end
 
 function game_start()
@@ -57,31 +67,39 @@ function game_start()
 		x=4,
 		y=3,
 		h=2,
-		hasfov=true,
-		cicle={1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0}
+		cicle={
+			1,1,1,1,1,1,1,1,1,
+			3,3,2,2,
+			0,0,0,0,0,0,0,0,0,
+			3,3,2,2
+		}
 	})
 	sushi=create_actor({
 		spr={"walk",-11,8,11,-8},
 		x=7,
 		y=5,
 		h=2,
-		hasfov=true,
 		cicle={1,1,1,3,3,0,0,0,2,2}
 	})
 	andre=create_actor({
 		spr={"walk",-39,36,39,-36},
-		x=11,
+		x=9,
 		y=9,
 		h=2,
-		hasfov=true,
-		cicle={0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1}
+		cicle={
+			0,0,0,0,0,
+			2,2,2,2,
+			3,3,3,3,
+			1,1,1,1,1,
+			2,2,2,2,
+			3,3,3,3
+		}
 	})
 	rick=create_actor({
 		spr={"walk",-45,42,45,-42},
 		x=1,
 		y=10,
 		h=2,
-		hasfov=true,
 		cicle={
 			2,2,2,2,2,2,2,2,2,2,
 			1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -89,6 +107,7 @@ function game_start()
 			0,0,0,0,0,0,0,0,0,0,0,0,0
 		}
 	})
+	enemies={corra,sushi,andre,rick}
 	ellie=create_actor({
 		spr={"walk",-2,2,5,18},
 		x=0,
@@ -114,14 +133,9 @@ function player_upd()
 	end
 end
 
-function check_fov(a,p)
-	if(not a.hasfov) return false
-	return pget(rdr.x+p.x,rdr.y+p.y,a.c)==13
-end
-
 rdr={
 	x=111,
-	y=113,
+	y=1,
 	w=16,
 	h=14
 }
@@ -134,6 +148,7 @@ function create_actor(actor)
 		spd=1,
 		step=0,
 		d=2,
+		a=0,
 		cs=1
 	}
 	for k,v in pairs(actor) do
@@ -145,9 +160,11 @@ function create_actor(actor)
 	return a
 end
 dirs={{-1,0},{1,0},{0,-1},{0,1}}
+angs={.5,0,-.25,.25}
 function move_actor(a,d)
 	d+=1
 	a.d=d
+	a.a=angs[d]
 	local tx=a.x+dirs[d][1]
 	local ty=a.y+dirs[d][2]
 	if(fget(mget(tx,ty),7) or tx<0)return
@@ -174,11 +191,10 @@ function actor_upd(a)
 		move_actor(a,a.cicle[a.cs])
 		if(a.cs>=#a.cicle)a.cs=0
 	end
-	a.in_fov = check_fov(a,ellie)
 end
 function actor_drw(a)
 	local x= a.x*8+ (a.tx-a.x)*a.step/2
-	local y= a.y*8+ (a.ty-a.y)*a.step/2- (a.h-1)*8
+	local y= a.y*8+ (a.ty-a.y)*a.step/2- (a.h-1)*8 +16
 	local sp=a.spr[2]
 	local kind=a.spr[1]
 	if kind=="walk" then
@@ -188,7 +204,7 @@ function actor_drw(a)
 		sp=sp+a.step%3
 	end
 	spr(abs(sp),x,y,1,a.h,sp<0)
-	if a.in_fov then
+	if a.alert then
 		spr(16,x,y-10)
 	end
 end
