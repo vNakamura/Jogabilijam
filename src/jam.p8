@@ -255,6 +255,7 @@ function codec_drw()
 	for i=1,6 do
 		rectfill(38,i*5,104-sin(-i/24)*54,i*5+2,i<codec.graph1 and 2 or 13)
 	end
+	coresume(dialogs_coroutine)
 end
 function drw_freq(x,y,f)
 	f=""..f
@@ -291,7 +292,33 @@ function show_codec()
 	scn_upd=codec_upd
 	scn_drw=codec_drw
 	sfx(0)
+	delay(50,function ()
+		dialog("ellie, sabe o que o guille^^gosta de fumar?", "andre")
+		dialog("...^^^^nao sei, o que?", "ellie")
+		dialog("narguile!^^^^hehehehehe", "andre")
+	end)
 end
+dialogs={}
+function dialog(...)
+	add(dialogs, {...})
+end
+function render_dialog(text,name)
+	rectfill(0,64,127,127,0)
+	rect(1,65,126,126,7)
+	name=name==null and""or"^c08"..name.."^^^^"
+	trx(4,68,name.."^c07"..text,0,1,5)
+	print("\131",118,120,5)
+end
+dialogs_coroutine = cocreate(function()
+	repeat
+		yield()
+		if(#dialogs>0) then
+			local d = dialogs[0]
+			render_dialog(d)
+			rem(dialogs,d)
+		end
+	until false
+end)
 
 function menu_upd()
 	if btnp(4)then
@@ -400,6 +427,96 @@ function transition(cb)
 	trst.on = true
 end
 function nothing() end
+
+-- trx "transmission x"
+function trx(x,y,t,fc,slo,cco)
+local i,c,c2,sb,prx
+local co=6 -- text color
+local cs=0 -- shadow color
+local cr=1 -- # of crs per line
+local sp=1 -- # of space/char
+local fx1,fx2,fy1,fy2 -- frame
+  fx1=0 fx2=0 fy1=0 fy2=0
+  if (x==null) x=0 -- x-pos
+  if (y==null) y=0 -- y-pos
+  if (t==null) t="" -- text
+  if (fc==null) fc=0 -- framec
+  if (slo==null) slo=0 -- slow
+  if (cco==null) cco=0 -- ccolr
+  prx=x
+  i=1 while i<=#t do -- crazy
+    c=sub(t,i,i)  -- for/next
+    if c=="^" then
+      i+=1
+      c=sub(t,i,i)
+      if c=="^" then
+        y+=6*cr -- carriage ret
+        x=prx
+      elseif c=="*" or c=="%" then
+        i+=1 -- draw sprite
+        c2=sub(t,i,i+2)+0
+        if c2>=0 and c2<=255 then
+          if c=="*" then
+            spr(c2,x,y-1)
+            x+=9
+          else
+            sspr(c2%16*8,c2%16/8,8,8,x,y,16,16)
+            x+=16
+          end
+          i+=2
+        end
+      elseif c=="x" or c=="y" then
+        i+=1 -- adjust x or y
+        c2=sub(t,i,i+3)+0
+        if c2>=-127 and c2<=127 then
+          if (c=="x") x+=c2
+          if (c=="y") y+=c2
+          i+=3
+        end
+      elseif c=="1" then
+        cr=1 -- single line
+      elseif c=="2" then
+        cr=2 -- double lines
+      elseif c=="-" then
+        sp=1 -- single space
+      elseif c=="=" then
+        sp=2 -- double spaces
+      elseif c=="c" then
+        i+=1 -- font color
+        c=sub(t,i,i+1)+0
+        if c>=0 and c<=15 then
+          co=c
+          i+=1
+        end
+      elseif c=="s" then
+        i+=1 -- shadow color
+        c=sub(t,i,i+1)+0
+        if c>=0 and c<=15 then
+          cs=c
+          i+=1
+        end
+      end
+    else
+      if cs>0 then -- 0=no shad
+        print(c,x,y+1,cs)
+      end
+      print(c,x,y,co)
+      x+=4*sp
+      if slo>0 then -- o=no slo
+        if cco>0 and x<prx+126 then
+          rectfill(x,y,x+3,y+4,cco)
+          if btn(4)==false then
+            for j=1,slo do
+              flip()
+            end
+          end
+          rectfill(x,y,x+3,y+4,0)
+        end
+      end
+    end
+  i+=1 end -- crazy next
+end--trx
+
 __gfx__
 00000000bbbbbbbbbbbbbbbbbbbbbbbbbb7b7bbbbb7b7bbbbb7b7bbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbfffbbbbbee4b6bbbee46bbbbee4bb
 00000000b9bbb76b9bbbb76bb9bbb76bbb797bbbbb797bbbbb797bbbbbf5f5bbbbf5f5bbbbf5f5bbbbffffbbbbffffbbbbffffbbbbefffbbbbefffbbbbefffb6
@@ -695,4 +812,3 @@ __music__
 00 41424344
 00 41424344
 00 41424344
-
