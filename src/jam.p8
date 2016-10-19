@@ -216,9 +216,11 @@ function actor_drw(a)
 end
 
 codec={
-	freq=1234,
+	freq=1408,
 	wait=0,
-	pressed=false
+	pressed=false,
+	graph1=0,
+	graph2=0
 }
 function codec_upd()
 	local pressed=false
@@ -231,7 +233,7 @@ function codec_upd()
 			codec.wait-=1
 		end
 		if codec.pressed and codec.wait==0 or codec.wait==15 then
-			if(btn(1))codec.freq=min(1399,codec.freq+1)
+			if(btn(1))codec.freq=min(1499,codec.freq+1)
 			if(btn(0))codec.freq=max(1100,codec.freq-1)
 			sfx(4)
 		end
@@ -239,12 +241,20 @@ function codec_upd()
 	codec.pressed=pressed
 end
 function codec_drw()
-	cls()
-	pal(13,1)
-	drw_freq(36,12,8888)
+	rectfill(0,0,127,127,1)
+	pal(13,2)
+	drw_freq(35,40,8888)
 	pal(13,13)
-	drw_freq(36,12,codec.freq)
-	circfill(78,27,1,13)
+	drw_freq(35,40,codec.freq)
+	circfill(77,54,1,13)
+	circfill(77,55,1,13)
+	sspr(0,112,16,16,95,1,32,32)--ellie
+	sspr(0,112,16,16,1,1,32,32)--outro
+	codec.graph1+=sgn(codec.graph2-codec.graph1)
+	if(codec.graph1==codec.graph2)codec.graph2=flr(rnd(8))
+	for i=1,6 do
+		rectfill(38,i*5,104-sin(-i/24)*54,i*5+2,i<codec.graph1 and 2 or 13)
+	end
 end
 function drw_freq(x,y,f)
 	f=""..f
@@ -293,12 +303,12 @@ function menu_upd()
 	if(menu.c>128) menu.c=0
 end
 function menu_drw()
-	sspr(64,95,32,32,0-menu.c,0,127,127)
-	sspr(64,95,32,32,128-menu.c,0,127,127)
+	sspr(64,96,32,32,0-menu.c,0,127,127)
+	sspr(64,96,32,32,128-menu.c,0,127,127)
 	if(menu.c%16<8) print("aperte z",48,100,7)
 	print("@vnaka            #jogabilijam",5,120,7)
 	spr(192,31,10,8,2)--logo
-	sspr(0,111,16,16,39,34,48,48)--ellie
+	sspr(0,112,16,16,39,34,48,48)--ellie
 end
 function show_menu()
 	music(0)
