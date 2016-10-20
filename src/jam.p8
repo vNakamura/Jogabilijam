@@ -4,66 +4,18 @@ __lua__
 -- metal jer corgi
 -- by vinicius nakamura
 debug_s=""
-palt(11,true)
-palt(0,false)
 
 function _init()
 --	show_logos()
 --	game_start()
 --	show_menu()
  show_codec()
+ palt(11,true)
+ palt(0,false)
 end
 
-function game_upd()
-	if (btnp(4)) transition(game_start)
-	if not paused then
-		player_upd()
-		foreach(actors,actor_upd)
-	end
-end
 
-function game_drw()
-	cls()
-	map(0,0,0,16,16,14)
-	foreach(actors,actor_drw)
-
-	--radar
-	rectfill(rdr.x,rdr.y,rdr.x+rdr.w-1,rdr.y+rdr.h-1,1)
-	clip(rdr.x,rdr.y,rdr.w,rdr.h)
-	walls_drw()
-	foreach(actors,dot_drw)
-	foreach(enemies,fov)
-	clip()
-end
-function fov(a)
-	for i=-.125,.125,.0125 do
-		for j=1,6 do
-			local _x=rdr.x+a.x+flr(cos(a.a+i)*j+.5)
-			local _y=rdr.y+a.y-flr(sin(a.a+i)*j+.5)
-			local _p=pget(_x,_y)
-			if(_p==13)break
-			pset(_x,_y,a.alert and 8 or 14)
-			if(_p==7) then
-				pset(_x,_y,7)
-				a.alert=true
-				debug_s="pra fora, ellie"
-				if(not paused)sfx(3)
-				paused=true
-			end
-		end
-	end
-end
-function walls_drw()
-	for y=0,rdr.h do
-		for x=0,rdr.w do
-			if(fget(mget(x,y),7)) pset(rdr.x+x,rdr.y+y,13)
-		end
-	end
-end
-function dot_drw(a)
-	pset(rdr.x+a.x,rdr.y+a.y,a.main and 7 or 8)
-end
-
+-- ========== game
 function game_start()
 	paused=false
 	debug_s=""
@@ -129,7 +81,13 @@ function game_start()
 	scn_upd = game_upd
 	scn_drw = game_drw
 end
-
+function game_upd()
+	if (btnp(4)) transition(game_start)
+	if not paused then
+		player_upd()
+		foreach(actors,actor_upd)
+	end
+end
 function player_upd()
 	if not ellie.mov then
 		if(btn(0))move_actor(ellie,0)
@@ -138,13 +96,53 @@ function player_upd()
 		if(btn(3))move_actor(ellie,3)
 	end
 end
-
 rdr={
 	x=111,
 	y=1,
 	w=16,
 	h=14
 }
+function game_drw()
+	cls()
+	map(0,0,0,16,16,14)
+	foreach(actors,actor_drw)
+
+	--radar
+	rectfill(rdr.x,rdr.y,rdr.x+rdr.w-1,rdr.y+rdr.h-1,1)
+	clip(rdr.x,rdr.y,rdr.w,rdr.h)
+	walls_drw()
+	foreach(actors,dot_drw)
+	foreach(enemies,fov)
+	clip()
+end
+function fov(a)
+	for i=-.125,.125,.0125 do
+		for j=1,6 do
+			local _x=rdr.x+a.x+flr(cos(a.a+i)*j+.5)
+			local _y=rdr.y+a.y-flr(sin(a.a+i)*j+.5)
+			local _p=pget(_x,_y)
+			if(_p==13)break
+			pset(_x,_y,a.alert and 8 or 14)
+			if(_p==7) then
+				pset(_x,_y,7)
+				a.alert=true
+				debug_s="pra fora, ellie"
+				if(not paused)sfx(3)
+				paused=true
+			end
+		end
+	end
+end
+function walls_drw()
+	for y=0,rdr.h do
+		for x=0,rdr.w do
+			if(fget(mget(x,y),7)) pset(rdr.x+x,rdr.y+y,13)
+		end
+	end
+end
+function dot_drw(a)
+	pset(rdr.x+a.x,rdr.y+a.y,a.main and 7 or 8)
+end
 function create_actor(actor)
 	local a = {
 		x=0,
@@ -215,111 +213,104 @@ function actor_drw(a)
 	end
 end
 
-codec={
-	freq=1408,
-	wait=0,
-	pressed=false,
-	graph1=0,
-	graph2=0
-}
-function codec_upd()
-	local pressed=false
-	if(btn(0)or btn(1))pressed=true
-	if pressed then
-		if not codec.pressed then
-			codec.wait=15
-			codec.pressed=true
-		elseif codec.wait>0 then
-			codec.wait-=1
-		end
-		if codec.pressed and codec.wait==0 or codec.wait==15 then
-			if(btn(1))codec.freq=min(1499,codec.freq+1)
-			if(btn(0))codec.freq=max(1100,codec.freq-1)
-			sfx(4)
-		end
-	end
-	codec.pressed=pressed
-end
-function codec_drw()
-	rectfill(0,0,127,127,1)
-	pal(13,2)
-	drw_freq(35,40,8888)
-	pal(13,13)
-	drw_freq(35,40,codec.freq)
-	circfill(77,54,1,13)
-	circfill(77,55,1,13)
-	sspr(0,112,16,16,95,1,32,32)--ellie
-	sspr(0,112,16,16,1,1,32,32)--outro
-	codec.graph1+=sgn(codec.graph2-codec.graph1)
-	if(codec.graph1==codec.graph2)codec.graph2=flr(rnd(8))
-	for i=1,6 do
-		rectfill(38,i*5,104-sin(-i/24)*54,i*5+2,i<codec.graph1 and 2 or 13)
-	end
-	coresume(dialogs_coroutine)
-end
-function drw_freq(x,y,f)
-	f=""..f
-	for d=1,4 do
-		if d==4 then
-			x+=3
-		end
-		drw_digit(x+d*14-14,y,sub(f,d,d))
-	end
-end
-function drw_digit(x,y,n)
-	local d=digits[n+1]
-	if(d[1])spr(129,x+2,y)
-	if(d[2])spr(128,x,y+1)
-	if(d[3])spr(128,x+9,y+1)
-	if(d[4])spr(129,x+2,y+7)
-	if(d[5])spr(128,x,y+8)
-	if(d[6])spr(128,x+9,y+8)
-	if(d[7])spr(129,x+2,y+14)
-end
-digits={
-	{1,1,1,false,1,1,1},
-	{false,false,1,false,false,1,false},
-	{1,false,1,1,1,false,1},
-	{1,false,1,1,false,1,1},
-	{false,1,1,1,false,1,false},
-	{1,1,false,1,false,1,1},
-	{1,1,false,1,1,1,1},
-	{1,false,1,false,false,1,false},
-	{1,1,1,1,1,1,1},
-	{1,1,1,1,false,1,1}
-}
+-- ========== codec
 function show_codec()
 	scn_upd=codec_upd
 	scn_drw=codec_drw
 	sfx(0)
-	delay(50,function ()
-		dialog("ellie, sabe o que o guille^^gosta de fumar?", "andre")
-		dialog("...^^^^nao sei, o que?", "ellie")
-		dialog("narguile!^^^^hehehehehe", "andre")
+	delay(5,function ()
+		dialog("ellie,^v9 ^v1sabe qual o carro^^que te diz quando vai chover?", "andre")
+		dialog("^v9...^^^^^v1nao sei,^v9 ^v1qual?", "ellie")
+		dialog("o celta preto!^^^^^v6hehehehehe", "andre")
 	end)
+end
+codec={
+	freq=14085,
+	press_delay=0,
+	pressed=false,
+	graph1=7,
+	graph2=7,
+  in_dialog=false
+}
+function codec_upd()
+  if codec.in_dialog then
+    if btnp(4) then
+      local d=dialogs[1]
+      del(dialogs,d)
+      codec.in_dialog=false
+    end
+  else
+  	local pressed=false
+  	if(btn(0)or btn(1))pressed=true
+  	if pressed then
+  		if not codec.pressed then
+  			codec.press_delay=15
+  			codec.pressed=true
+  		elseif codec.press_delay>0 then
+  			codec.press_delay-=1
+  		end
+  		if codec.pressed and codec.press_delay==0 or codec.press_delay==15 then
+  			if(btn(1))codec.freq=min(14999,codec.freq+1)
+  			if(btn(0))codec.freq=max(13000,codec.freq-1)
+  			sfx(4)
+  		end
+  	end
+  	codec.pressed=pressed
+  end
+end
+function codec_drw()
+  if not codec.in_dialog then
+    cls()
+  	drw_freq(46,38,codec.freq)
+  	sspr(0,112,16,16,95,16,32,32)--ellie
+  	sspr(0,112,16,16,1,16,32,32)--outro
+    if #dialogs>0 then
+      codec.in_dialog=true
+  		delay(5,render_dialog,dialogs[1])
+    end
+  end
+  drw_graph()
+end
+function drw_graph()
+  codec.graph1+=sgn(codec.graph2-codec.graph1)
+  if(codec.graph1==codec.graph2)codec.graph2=codec.in_dialog and flr(rnd(8)) or 7
+  for i=1,6 do
+    rectfill(36,16+i*4,106-sin(-i/26)*64,16+i*4+2,i<codec.graph1 and 1 or 6)
+  end
+end
+function drw_freq(x,y,f)
+	f=""..f
+	for d=1,5 do
+    local s,_x,_y=1,x,y
+    if d>2then
+      s=2
+      _y=y-7
+    end
+    if(d>3)_x+=6
+    if(d>4)_x+=4
+		drw_digit(_x+d*6,_y,sub(f,d,d),s)
+	end
+  rectfill(x+27,y+5,x+28,y+6,6)
+end
+function drw_digit(x,y,n,s)
+  s=s or 1
+  sspr(n*4,64,4,7,x,y,4*s,7*s)
 end
 dialogs={}
 function dialog(...)
 	add(dialogs, {...})
 end
-function render_dialog(text,name)
+function render_dialog(d)
+  local name=d[2]
 	rectfill(0,64,127,127,0)
 	rect(1,65,126,126,7)
-	name=name==null and""or"^c08"..name.."^^^^"
-	trx(4,68,name.."^c07"..text,0,1,5)
+	local name=name==null and""or"^c08"..name.."^^^^"
+	trx(4,68,name.."^c07"..d[1],0,1,5)
 	print("\131",118,120,5)
 end
-dialogs_coroutine = cocreate(function()
-	repeat
-		yield()
-		if(#dialogs>0) then
-			local d = dialogs[0]
-			render_dialog(d)
-			rem(dialogs,d)
-		end
-	until false
-end)
 
+
+-- ========== menu
 function menu_upd()
 	if btnp(4)then
 		music(-1)
@@ -344,6 +335,8 @@ function show_menu()
 	scn_drw=menu_drw
 end
 
+
+-- ========== intro
 function logo1_drw()
 	rectfill(0,0,127,127,13)
 	circ(34,58,1,7)
@@ -374,6 +367,8 @@ function show_logos()
 	delay(160,sfx,21)
 	delay(320,transition,show_menu)
 end
+
+-- ========== tools
 function _update()
 	scn_upd()
 	ctrs_upd()
@@ -488,6 +483,10 @@ local fx1,fx2,fy1,fy2 -- frame
           co=c
           i+=1
         end
+      elseif c=="v" then
+        i+=1 -- font color
+        c=sub(t,i,i)+0
+        if(c>=0 and c<=9) slo=c
       elseif c=="s" then
         i+=1 -- shadow color
         c=sub(t,i,i+1)+0
@@ -505,8 +504,9 @@ local fx1,fx2,fy1,fy2 -- frame
       if slo>0 then -- o=no slo
         if cco>0 and x<prx+126 then
           rectfill(x,y,x+3,y+4,cco)
-          if btn(4)==false then
+          if btnp(4)==false then
             for j=1,slo do
+              drw_graph()
               flip()
             end
           end
@@ -582,14 +582,14 @@ b55bbbbbb55055bbbbbb55bbb11bbbbbb11011bbbbbb11bbb11bbbbbb11011bbbbbb11bbb55bbbbb
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-bbbbbbbbbbddddbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-bdbbbbbbbddddddb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-dddbbbbbbbddddbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-dddbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-dddbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-dddbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-bdbbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-bbbbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+b66bb11bb66bb66bb11bb66bb66bb66bb66bb66b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+6bb61bb61bb61bb66bb66bb16bb11bb66bb66bb60000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+6bb61bb61bb61bb66bb66bb16bb11bb66bb66bb60000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+b11bb11bb66bb66bb66bb66bb66bb11bb66bb66b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+6bb61bb66bb11bb61bb61bb66bb61bb66bb61bb60000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+6bb61bb66bb11bb61bb61bb66bb61bb66bb61bb60000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+b66bb11bb66bb66bb11bb66bb66bb11bb66bb66b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
