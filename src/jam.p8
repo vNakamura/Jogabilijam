@@ -217,8 +217,9 @@ end
 function show_codec()
 	scn_upd=codec_upd
 	scn_drw=codec_drw
-	sfx(0)
-	delay(5,function ()
+	sfx(2)
+	delay(50,sfx,0)
+	delay(60,function ()
 		dialog("ellie,^v9 ^v1sabe qual o carro^^que te diz quando vai chover?", "andre")
 		dialog("^v9...^^^^^v1nao sei,^v9 ^v1qual?", "ellie")
 		dialog("o celta preto!^^^^^v6hehehehehe", "andre")
@@ -230,13 +231,15 @@ codec={
 	pressed=false,
 	graph1=7,
 	graph2=7,
-  in_dialog=false
+	on_call=false,
+	in_dialog=false
 }
 function codec_upd()
   if codec.in_dialog then
     if btnp(4) then
       local d=dialogs[1]
       del(dialogs,d)
+      if(#dialogs==0)codec.on_call=false
       codec.in_dialog=false
     end
   else
@@ -259,17 +262,20 @@ function codec_upd()
   end
 end
 function codec_drw()
-  if not codec.in_dialog then
-    cls()
-  	drw_freq(46,38,codec.freq)
-  	sspr(0,112,16,16,95,16,32,32)--ellie
-  	sspr(0,112,16,16,1,16,32,32)--outro
-    if #dialogs>0 then
-      codec.in_dialog=true
-  		delay(5,render_dialog,dialogs[1])
-    end
-  end
-  drw_graph()
+	if not codec.in_dialog then
+		cls()
+		drw_freq(46,38,codec.freq)
+		if #dialogs>0 then
+			codec.in_dialog=true
+			delay(5,render_dialog,dialogs[1])
+		end
+	end
+	if codec.on_call then
+		rect(1,65,126,126,7)
+		sspr(0,112,16,16,95,16,32,32)--ellie
+		sspr(0,112,16,16,1,16,32,32)--outro
+	end
+	drw_graph()
 end
 function drw_graph()
   codec.graph1+=sgn(codec.graph2-codec.graph1)
@@ -298,12 +304,11 @@ function drw_digit(x,y,n,s)
 end
 dialogs={}
 function dialog(...)
+	codec.on_call=true
 	add(dialogs, {...})
 end
 function render_dialog(d)
-  local name=d[2]
-	rectfill(0,64,127,127,0)
-	rect(1,65,126,126,7)
+ local name=d[2]
 	local name=name==null and""or"^c08"..name.."^^^^"
 	trx(4,68,name.."^c07"..d[1],0,1,5)
 	print("\131",118,120,5)
@@ -425,96 +430,97 @@ function nothing() end
 
 -- trx "transmission x"
 function trx(x,y,t,fc,slo,cco)
-local i,c,c2,sb,prx
-local co=6 -- text color
-local cs=0 -- shadow color
-local cr=1 -- # of crs per line
-local sp=1 -- # of space/char
-local fx1,fx2,fy1,fy2 -- frame
-  fx1=0 fx2=0 fy1=0 fy2=0
-  if (x==null) x=0 -- x-pos
-  if (y==null) y=0 -- y-pos
-  if (t==null) t="" -- text
-  if (fc==null) fc=0 -- framec
-  if (slo==null) slo=0 -- slow
-  if (cco==null) cco=0 -- ccolr
-  prx=x
-  i=1 while i<=#t do -- crazy
-    c=sub(t,i,i)  -- for/next
-    if c=="^" then
-      i+=1
-      c=sub(t,i,i)
-      if c=="^" then
-        y+=6*cr -- carriage ret
-        x=prx
-      elseif c=="*" or c=="%" then
-        i+=1 -- draw sprite
-        c2=sub(t,i,i+2)+0
-        if c2>=0 and c2<=255 then
-          if c=="*" then
-            spr(c2,x,y-1)
-            x+=9
-          else
-            sspr(c2%16*8,c2%16/8,8,8,x,y,16,16)
-            x+=16
-          end
-          i+=2
-        end
-      elseif c=="x" or c=="y" then
-        i+=1 -- adjust x or y
-        c2=sub(t,i,i+3)+0
-        if c2>=-127 and c2<=127 then
-          if (c=="x") x+=c2
-          if (c=="y") y+=c2
-          i+=3
-        end
-      elseif c=="1" then
-        cr=1 -- single line
-      elseif c=="2" then
-        cr=2 -- double lines
-      elseif c=="-" then
-        sp=1 -- single space
-      elseif c=="=" then
-        sp=2 -- double spaces
-      elseif c=="c" then
-        i+=1 -- font color
-        c=sub(t,i,i+1)+0
-        if c>=0 and c<=15 then
-          co=c
-          i+=1
-        end
-      elseif c=="v" then
-        i+=1 -- font color
-        c=sub(t,i,i)+0
-        if(c>=0 and c<=9) slo=c
-      elseif c=="s" then
-        i+=1 -- shadow color
-        c=sub(t,i,i+1)+0
-        if c>=0 and c<=15 then
-          cs=c
-          i+=1
-        end
-      end
-    else
-      if cs>0 then -- 0=no shad
-        print(c,x,y+1,cs)
-      end
-      print(c,x,y,co)
-      x+=4*sp
-      if slo>0 then -- o=no slo
-        if cco>0 and x<prx+126 then
-          rectfill(x,y,x+3,y+4,cco)
-          if btnp(4)==false then
-            for j=1,slo do
-              drw_graph()
-              flip()
-            end
-          end
-          rectfill(x,y,x+3,y+4,0)
-        end
-      end
-    end
-  i+=1 end -- crazy next
+	local i,c,c2,sb,prx
+	local co=6 -- text color
+	local cs=0 -- shadow color
+	local cr=1 -- # of crs per line
+	local sp=1 -- # of space/char
+	local fx1,fx2,fy1,fy2 -- frame
+	fx1=0 fx2=0 fy1=0 fy2=0
+	if(x==null) x=0 -- x-pos
+	if(y==null) y=0 -- y-pos
+	if(t==null) t="" -- text
+	if(fc==null) fc=0 -- framec
+	if(slo==null) slo=0 -- slow
+	if(cco==null) cco=0 -- ccolr
+	prx=x
+	i=1 while i<=#t do -- crazy
+		c=sub(t,i,i)  -- for/next
+		if c=="^" then
+			i+=1
+			c=sub(t,i,i)
+			if c=="^" then
+				y+=6*cr -- carriage ret
+				x=prx
+			elseif c=="*" or c=="%" then
+				i+=1 -- draw sprite
+				c2=sub(t,i,i+2)+0
+				if c2>=0 and c2<=255 then
+					if c=="*" then
+						spr(c2,x,y-1)
+						x+=9
+					else
+						sspr(c2%16*8,c2%16/8,8,8,x,y,16,16)
+						x+=16
+					end
+					i+=2
+				end
+			elseif c=="x" or c=="y" then
+				i+=1 -- adjust x or y
+				c2=sub(t,i,i+3)+0
+				if c2>=-127 and c2<=127 then
+					if(c=="x")x+=c2
+					if(c=="y")y+=c2
+					i+=3
+				end
+			elseif c=="1" then
+				cr=1 -- single line
+			elseif c=="2" then
+				cr=2 -- double lines
+			elseif c=="-" then
+				sp=1 -- single space
+			elseif c=="=" then
+				sp=2 -- double spaces
+			elseif c=="c" then
+				i+=1 -- font color
+				c=sub(t,i,i+1)+0
+				if c>=0 and c<=15 then
+					co=c
+					i+=1
+				end
+			elseif c=="v" then
+				i+=1 -- font color
+				c=sub(t,i,i)+0
+				if(c>=0 and c<=9)slo=c
+			elseif c=="s" then
+				i+=1 -- shadow color
+				c=sub(t,i,i+1)+0
+				if c>=0 and c<=15 then
+					cs=c
+					i+=1
+				end
+			end
+		else
+			if cs>0 then -- 0=no shad
+				print(c,x,y+1,cs)
+			end
+			print(c,x,y,co)
+			x+=4*sp
+			if slo>0 then -- o=no slo
+				if cco>0 and x<prx+126 then
+					rectfill(x,y,x+3,y+4,cco)
+					--if (not btn(4)) then
+						for j=1,slo do
+							drw_graph()
+							flip()
+						end
+					--end
+					rectfill(x,y,x+3,y+4,0)
+				end
+			end
+		end
+		i+=1
+	end -- crazy next
 end--trx
 
 __gfx__
@@ -684,7 +690,7 @@ __map__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 01030000245102451024520265302a54030560355703c5703f5703f5703f5703f5603f5603f5503f5503f5403f5403f5303f5303f5203f5203f5103f5003f5003f5003f5003f5003f5003f5003f5003f5003f500
-001600003467520605276452e60520635236051d6250b6051b6152160520605216051c60523605246050060500605006050060500605006050060500605006050060500605006050060500605006050060500605
+011600003467520605276452e60520635236051d6250b6051b6152160520605216051c60523605246050060500605006050060500605006050060500605006050060500605006050060500605006050060500605
 0003000037573395733b5733d5733e5733f5733f5733f5633f5533f5433f5333f5233f5133f5133f513385733a5733c5733d5733e5733f5733f5733f5733f5733f5733f5733f5633f5533f5433f5333f5233f513
 01020000191411f151231612617128171291712a1712a1712a1712a1712a1712a1712a1712a1712a1712a1512a1312a1110010100101001010010100101001010010100101001010010100101001010010100101
 001000002553000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500
@@ -812,3 +818,4 @@ __music__
 00 41424344
 00 41424344
 00 41424344
+
