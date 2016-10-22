@@ -282,11 +282,14 @@ function codec_drw()
 		end
 	end
 	if codec.on_call then
-		rect(1,65,126,126,7)
-		sspr(0,112,16,16,95,16,32,32)--ellie
-		rect(94,15,127,48,6)
-		sspr(16,112,16,16,1,16,32,32)--outro
-		rect(0,15,33,48,6)
+		local f=freqs[codec.freq]
+		if f then
+			rect(1,65,126,126,7)
+			sspr(0,112,16,16,95,16,32,32)--ellie
+			rect(94,15,127,48,6)
+			sspr(f.pic_x,f.pic_y,16,16,1,16,32,32)--outro
+			rect(0,15,33,48,6)
+		end
 	end
 	drw_graph()
 end
@@ -326,7 +329,12 @@ function render_dialog(d)
 	trx(4,68,name.."^c07"..d[1],0,1,5)
 	print("\131",118,120,5)
 end
-
+freqs={}
+freqs[14096]={
+	name="andre",
+	pic_x=16,
+	pic_y=112
+}
 
 -- ========== menu
 function menu_upd()
@@ -831,3 +839,4 @@ __music__
 00 41424344
 00 41424344
 00 41424344
+
